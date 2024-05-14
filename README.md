@@ -26,6 +26,8 @@ If you want to run the backend FastAPI server, you can do so by running the foll
 ```bash
 cd backend
 python -m uvicorn main:app --reload --host 0.0.0.0 --port 8000
+# or you can run 
+python main.py
 ```
 
 You can start editing the page by modifying `src/app/page.tsx`. The page auto-updates as you edit the file.

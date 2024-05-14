@@ -1,10 +1,10 @@
-# Basic Python packages for date and OS interaction
+fastapi==0.78.0
+uvicorn[standard]==0.18.2
+python-multipart==0.0.5
+PyMuPDF==1.20.1
+spacy==3.3.0
+scikit-learn==1.0.2
+numpy==1.22.3
 python-dotenv==0.20.0
-# WhyHow SDK for knowledge graph manipulation
+openai==0.11.0
 whyhow
-# Neo4j Python driver for connecting to Neo4j databases
-neo4j==4.4.1
-# Packages for handling dates and times
-datetime
-# Create pdfs from text files
-reportlab
