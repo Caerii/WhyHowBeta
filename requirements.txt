@@ -1,0 +1,10 @@
+# Basic Python packages for date and OS interaction
+python-dotenv==0.20.0
+# WhyHow SDK for knowledge graph manipulation
+whyhow
+# Neo4j Python driver for connecting to Neo4j databases
+neo4j==4.4.1
+# Packages for handling dates and times
+datetime
+# Create pdfs from text files
+reportlab

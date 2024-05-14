@@ -1,0 +1,41 @@
+{
+    "entities": [
+      {
+        "name": "Paper",
+        "description": "An individual scientific paper, identified by its title or DOI."
+      },
+      {
+        "name": "Hypothesis",
+        "description": "A scientific claim or hypothesis stated within a paper."
+      },
+      {
+        "name": "Result",
+        "description": "Experimental or observational results presented within a paper."
+      }
+    ],
+    "relations": [
+      {
+        "name": "supports",
+        "description": "Indicates that a result or finding supports a hypothesis."
+      },
+      {
+        "name": "contradicts",
+        "description": "Indicates that a result or finding contradicts a hypothesis."
+      }
+    ],
+    "patterns": [
+      {
+        "head": "Result",
+        "relation": "supports",
+        "tail": "Hypothesis",
+        "description": "A result that provides support for a hypothesis."
+      },
+      {
+        "head": "Result",
+        "relation": "contradicts",
+        "tail": "Hypothesis",
+        "description": "A result that provides evidence against a hypothesis."
+      }
+    ]
+  }
+  
