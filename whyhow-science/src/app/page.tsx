@@ -90,7 +90,7 @@ export default function Home() {
         }
       });
 
-      const { filename, namespace } = response.data;
+      const { filename: uploadedFilename, namespace: uploadedNamespace } = response.data;
 
       toast({
         title: "Success",
