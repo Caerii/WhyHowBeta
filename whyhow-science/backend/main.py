@@ -69,6 +69,8 @@ async def upload_document(file: UploadFile = File(...), namespace: str = Form(..
             f.write(content)
             logger.info(f"File {file.filename} written to {pdf_path}")
 
+        client.graph.add_documents(namespace, [file.filename])
+
         return {"filename": file.filename, "namespace": namespace}
 
     except Exception as e:
@@ -86,56 +88,41 @@ async def create_graph(request: CreateGraphRequest):
             raise HTTPException(status_code=400, detail="Namespace and files are required.")
 
         combined_text = ""
-        missing_files = []
+        full_pdf_paths = []  # List to store full paths of the PDF files
         logger.info(f"Processing files for namespace {request.namespace}: {request.files}")
 
         for file_name in request.files:
             pdf_path = f"./data/{file_name}"
-            logger.debug(f"Checking existence for file: {pdf_path}")
-            
+            logger.info(f"Opening file: {pdf_path}")
             if not os.path.exists(pdf_path):
-                logger.warning(f"File not found: {pdf_path}")
-                missing_files.append(file_name)
-            else:
-                logger.info(f"Opening file: {pdf_path}")
-                pdf_document = fitz.open(pdf_path)
-                
-                for page_num in range(len(pdf_document)):
-                    page = pdf_document.load_page(page_num)
-                    page_text = page.get_text()
-                    combined_text += page_text
-                    logger.debug(f"Extracted text from page {page_num} of {file_name}")
+                logger.error(f"File not found: {pdf_path}")
+                raise HTTPException(status_code=404, detail=f"File {file} not found.")
+            
+            full_pdf_paths.append(pdf_path)  # Add the full path to the list
+            pdf_document = fitz.open(pdf_path)
+            for page_num in range(len(pdf_document)):
+                page_text = pdf_document.load_page(page_num).get_text()
+                combined_text += page_text
+                logger.debug(f"Extracted text from page {page_num} of {file_name}")
 
-        if missing_files:
-            logger.error(f"Not all documents exist: {missing_files}")
-            raise HTTPException(status_code=404, detail=f"Not all documents exist: {missing_files}")
-
-        if request.use_raw_text:
-            phrases = [combined_text]
-            logger.info("Using raw text for processing")
-        else:
-            phrases = extract_phrases(combined_text)
-            logger.info(f"Extracted phrases: {phrases}")
-
+        phrases = extract_phrases(combined_text) if not request.use_raw_text else [combined_text]
         lda, vectorizer = extract_topics(phrases)
         topic_phrases = get_topic_phrases(lda, vectorizer)
-        logger.info(f"Topic phrases extracted: {topic_phrases}")
+
+        logger.info(f"Extracted phrases and topics successfully: {topic_phrases}")
 
         questions = []
         for topic in topic_phrases:
-            generated_questions = generate_questions_gpt3(topic, openai_client)
-            questions.extend(generated_questions)
+            questions += generate_questions_gpt3(topic, openai_client)
             logger.info(f"Generated questions for topic: {topic}")
-            logger.debug(f"Questions: {generated_questions}")
 
-        documents_response = client.graph.add_documents(request.namespace, request.files)
-        logger.info(f"Documents added to the graph database: {documents_response}")
+        logger.info("Adding documents to the graph...")
+        documents_response = client.graph.add_documents(request.namespace, full_pdf_paths)
+        logger.info(f"Documents added successfully: {documents_response}")
 
+        logger.info("Creating graph...")
         extracted_graph = client.graph.create_graph(request.namespace, questions)
-        logger.info(f"Graph created successfully")
-
-        end_time = time.time()
-        logger.info(f"Total processing time: {end_time - start_time:.2f} seconds")
+        logger.info("Graph created successfully")
 
         return {
             "important_phrases": topic_phrases,
@@ -145,11 +132,13 @@ async def create_graph(request: CreateGraphRequest):
         }
 
     except HTTPException as http_exc:
-        logger.error(f"HTTP error occurred: {str(http_exc)}")
+        logger.error(f"HTTP error occurred: {http_exc.detail}")
         raise http_exc
     except Exception as e:
         logger.error(f"Unexpected error occurred: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
 
 @app.post("/query")
 async def query_graph(query: Query):
