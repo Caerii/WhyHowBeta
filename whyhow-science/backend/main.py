@@ -9,7 +9,7 @@ import os
 import fitz  # PyMuPDF
 import logging
 from openai import OpenAI
-import utils  # Import the utility module
+from utils import extract_phrases, extract_topics, get_topic_phrases, generate_questions_gpt3
 
 load_dotenv()
 
@@ -63,55 +63,79 @@ async def upload_document(file: UploadFile = File(...), namespace: str = Form(..
     try:
         content = await file.read()
         pdf_path = f"./data/{file.filename}"
+        logger.info(f"Received file {file.filename} with size {len(content)} bytes.")
 
         with open(pdf_path, 'wb') as f:
             f.write(content)
-
-        logger.info(f"Uploaded file: {file.filename}")
+            logger.info(f"File {file.filename} written to {pdf_path}")
 
         return {"filename": file.filename, "namespace": namespace}
 
     except Exception as e:
-        logger.error(f"Error occurred: {str(e)}")
+        logger.error(f"Failed to upload {file.filename}: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/create_graph")
 async def create_graph(request: CreateGraphRequest):
     start_time = time.time()
+    logger.info("Starting the graph creation process")
+    
     try:
         if not request.namespace or not request.files:
+            logger.error("Namespace and files are required but not provided.")
             raise HTTPException(status_code=400, detail="Namespace and files are required.")
 
         combined_text = ""
         missing_files = []
+        logger.info(f"Processing files for namespace {request.namespace}: {request.files}")
 
         for file_name in request.files:
             pdf_path = f"./data/{file_name}"
+            logger.debug(f"Checking existence for file: {pdf_path}")
+            
             if not os.path.exists(pdf_path):
+                logger.warning(f"File not found: {pdf_path}")
                 missing_files.append(file_name)
             else:
+                logger.info(f"Opening file: {pdf_path}")
                 pdf_document = fitz.open(pdf_path)
+                
                 for page_num in range(len(pdf_document)):
                     page = pdf_document.load_page(page_num)
-                    combined_text += page.get_text()
+                    page_text = page.get_text()
+                    combined_text += page_text
+                    logger.debug(f"Extracted text from page {page_num} of {file_name}")
 
         if missing_files:
+            logger.error(f"Not all documents exist: {missing_files}")
             raise HTTPException(status_code=404, detail=f"Not all documents exist: {missing_files}")
 
         if request.use_raw_text:
-            phrases = [combined_text]  # Using raw text as a single document
+            phrases = [combined_text]
+            logger.info("Using raw text for processing")
         else:
-            phrases = utils.extract_phrases(combined_text)
-        
-        lda, vectorizer = utils.extract_topics(phrases)
-        topic_phrases = utils.get_topic_phrases(lda, vectorizer)
+            phrases = extract_phrases(combined_text)
+            logger.info(f"Extracted phrases: {phrases}")
+
+        lda, vectorizer = extract_topics(phrases)
+        topic_phrases = get_topic_phrases(lda, vectorizer)
+        logger.info(f"Topic phrases extracted: {topic_phrases}")
 
         questions = []
         for topic in topic_phrases:
-            questions.extend(utils.generate_questions_gpt3(topic, openai_client))
+            generated_questions = generate_questions_gpt3(topic, openai_client)
+            questions.extend(generated_questions)
+            logger.info(f"Generated questions for topic: {topic}")
+            logger.debug(f"Questions: {generated_questions}")
 
         documents_response = client.graph.add_documents(request.namespace, request.files)
+        logger.info(f"Documents added to the graph database: {documents_response}")
+
         extracted_graph = client.graph.create_graph(request.namespace, questions)
+        logger.info(f"Graph created successfully")
+
+        end_time = time.time()
+        logger.info(f"Total processing time: {end_time - start_time:.2f} seconds")
 
         return {
             "important_phrases": topic_phrases,
@@ -119,11 +143,12 @@ async def create_graph(request: CreateGraphRequest):
             "documents_response": documents_response,
             "extracted_graph": extracted_graph
         }
+
     except HTTPException as http_exc:
         logger.error(f"HTTP error occurred: {str(http_exc)}")
         raise http_exc
     except Exception as e:
-        logger.error(f"Error occurred: {str(e)}")
+        logger.error(f"Unexpected error occurred: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/query")

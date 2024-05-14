@@ -114,7 +114,6 @@ export default function Home() {
     }
   };
 
-
   const handleQuery = async () => {
     try {
       const response = await axios.post('http://localhost:8000/query', {
@@ -171,7 +170,6 @@ export default function Home() {
     });
   }
 };
-
 
   const toggleDocumentSelection = (docName) => {
     setSelectedDocs(prevSelectedDocs => {
