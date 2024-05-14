@@ -102,14 +102,16 @@ async def create_graph(request: CreateGraphRequest):
             
             full_pdf_paths.append(pdf_path)  # Add the full path to the list
             pdf_document = fitz.open(pdf_path)
+            # TODO: extract title and author
             for page_num in range(len(pdf_document)):
+                # Extract text from each page and combine
                 page_text = pdf_document.load_page(page_num).get_text()
                 combined_text += page_text
                 logger.debug(f"Extracted text from page {page_num} of {file_name}")
 
         phrases = extract_phrases(combined_text) if not request.use_raw_text else [combined_text]
         lda, vectorizer = extract_topics(phrases)
-        topic_phrases = get_topic_phrases(lda, vectorizer, num_phrases=100)
+        topic_phrases = get_topic_phrases(lda, vectorizer, num_phrases=600)
 
         logger.info(f"Extracted phrases and topics successfully: {topic_phrases}")
 
