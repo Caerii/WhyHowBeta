@@ -285,7 +285,7 @@ export default function Home() {
             </SimpleGrid>
           </Box>
           {importantPhrases.length > 0 && (
-            <Box maxH="200px" overflowY="auto" w="100%">
+            <Box maxH="500px" overflowY="auto" w="100%">
               <Heading as="h3" size="md">Important Phrases:</Heading>
               <ul>
                 {importantPhrases.map((topic, index) => (

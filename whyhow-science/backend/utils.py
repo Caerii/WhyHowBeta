@@ -24,7 +24,7 @@ def generate_questions_gpt3(phrases, openai_client):
     )
     return response.choices[0].message.content.strip().split('\n')
 
-def extract_phrases(text, top_n=450):
+def extract_phrases(text, top_n=3000):
 
     doc = nlp(text)
     phrases = [chunk.text for chunk in doc.noun_chunks if len(chunk.text.split()) > 1]
@@ -45,8 +45,8 @@ def extract_topics(phrases, n_topics=1):
     lda.fit(X)
     return lda, vectorizer
 
-def get_topic_phrases(lda, vectorizer):
+def get_topic_phrases(lda, vectorizer, num_phrases=20):
     topic_phrases = []
     for topic_idx, topic in enumerate(lda.components_):
-        topic_phrases.append([vectorizer.get_feature_names_out()[i] for i in topic.argsort()[:-10 - 1:-1]])
+        topic_phrases.append([vectorizer.get_feature_names_out()[i] for i in topic.argsort()[:-num_phrases - 1:-1]])
     return topic_phrases

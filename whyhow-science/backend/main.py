@@ -109,7 +109,7 @@ async def create_graph(request: CreateGraphRequest):
 
         phrases = extract_phrases(combined_text) if not request.use_raw_text else [combined_text]
         lda, vectorizer = extract_topics(phrases)
-        topic_phrases = get_topic_phrases(lda, vectorizer)
+        topic_phrases = get_topic_phrases(lda, vectorizer, num_phrases=100)
 
         logger.info(f"Extracted phrases and topics successfully: {topic_phrases}")
 
