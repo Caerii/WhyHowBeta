@@ -10,6 +10,9 @@ Here we have an experimental interface for exploring the concepts in papers in o
 First, run the development server inside of whyhow-science:
 
 ```bash
+# run this first to install the dependencies
+npm install
+# then run this to start the development server
 npm run dev
 # or
 yarn dev
