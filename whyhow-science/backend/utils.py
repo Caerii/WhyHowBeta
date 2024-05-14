@@ -9,6 +9,7 @@ from openai import OpenAI
 nlp = spacy.load("en_core_web_sm")
 
 def generate_questions_gpt3(phrases, openai_client):
+    print(phrases)
     messages = [
         {"role": "system", "content": "You are an expert in ontology creation for knowledge graphs. You take a bunch of phrases, and you generate good questions that can act as a seed for generating and populating information in a knowledge graph based on phrases provided."},
         {"role": "user", "content": f"Generate a list of specific, high-quality questions to create seed questions for an ontology for a knowledge graph from the following key phrases: {', '.join(phrases)}"}
@@ -23,7 +24,8 @@ def generate_questions_gpt3(phrases, openai_client):
     )
     return response.choices[0].message.content.strip().split('\n')
 
-def extract_phrases(text, top_n=150):
+def extract_phrases(text, top_n=450):
+
     doc = nlp(text)
     phrases = [chunk.text for chunk in doc.noun_chunks if len(chunk.text.split()) > 1]
     if not phrases:

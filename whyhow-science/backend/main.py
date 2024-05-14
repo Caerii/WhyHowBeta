@@ -62,20 +62,22 @@ logger = logging.getLogger(__name__)
 async def upload_document(file: UploadFile = File(...), namespace: str = Form(...)):
     try:
         content = await file.read()
-        pdf_path = f"./data/{file.filename}"
+        pdf_path = f"./data/{file.filename}"  # Construct the full path
         logger.info(f"Received file {file.filename} with size {len(content)} bytes.")
 
         with open(pdf_path, 'wb') as f:
             f.write(content)
             logger.info(f"File {file.filename} written to {pdf_path}")
 
-        client.graph.add_documents(namespace, [file.filename])
+        # Ensure that full file paths are used
+        client.graph.add_documents(namespace, [pdf_path])
 
         return {"filename": file.filename, "namespace": namespace}
 
     except Exception as e:
         logger.error(f"Failed to upload {file.filename}: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
+
 
 @app.post("/create_graph")
 async def create_graph(request: CreateGraphRequest):
@@ -138,17 +140,17 @@ async def create_graph(request: CreateGraphRequest):
         logger.error(f"Unexpected error occurred: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
-
-
 @app.post("/query")
 async def query_graph(query: Query):
     try:
         response = client.graph.query_graph(
             namespace=query.namespace,
             query=query.question,
-            include_triples=True,
+            # include_triples=True,
             include_chunks=True
         )
+
+        print(response)
 
         return {"response": response}
 
